@@ -64,6 +64,10 @@ class SerialInterface:
 
 
     def refresh(self, led_color_array):
+        print(led_color_array[0])
+        print(led_color_array[1])
+        print(led_color_array[2])
+
         #check for values used as start/end marker
         for index in range(len(led_color_array)):
             led_color_array[index] = min(led_color_array[index],252)

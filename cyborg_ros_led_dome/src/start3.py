@@ -22,35 +22,13 @@ from neural_sources.file.file_server import FileServer
 from neural_sources.server.client import Client
 from neural_interpreter.snake import Snake
 
-#litt juks
-sm = smach.StateMachine(outcomes=[])
-
-def return_interpreter(mode):
-    print("returning %s"% mode)
-    if "moving-average" in mode:
-        return MovingAverage()
-    elif "intensity" in mode:
-        return Intensity()
-    elif "individual-moving-average" in (mode):
-        return IndividualMovingAverage()
-    elif "random-mode" in mode:
-        return RandomMode()
-    elif "siren" in mode:
-        return Siren()
-    elif "eyes" in mode:
-        return Eyes()
-    elif "snake" in mode:
-        return Snake()
-    else:
-        #error handling?
-        pass
     
 class startup(smach.State):
-    def __init__(self):
+    def __init__(self, loopfunction):
         smach.State.__init__(self,outcomes=["transition"],
                                output_keys=["presenter_out","interpreter_out",
                                             "led_colors_out","current_mode_out"])
-    
+        self.loop = loopfunction
     def execute(self,userdata):
         neuron_data = [0] * settings.NEURAL_ELECTRODES_TOTAL
         settings.CHANGE_REQUESTED = False
@@ -61,8 +39,8 @@ class startup(smach.State):
         #redundant?
         """for i in range(len(neuron_data)):
             neuron_data[i] = 0"""
-        loop(neuron_data)
-        loop(neuron_data)
+        self.loop(neuron_data)
+        self.loop(neuron_data)
        
         #wait for incoming message
         while not settings.CHANGE_REQUESTED and not rospy.is_shutdown(): 
@@ -110,15 +88,17 @@ class meafromserver(smach.State):
 
         
 class meafromfile(smach.State):
-    def __init__(self):
+    def __init__(self, loopfunction, return_interpreter):
         smach.State.__init__(self,outcomes=["transition"],
                                 input_keys=["current_mode_in","presenter","interpreter"],
                                output_keys=["interpreter","presenter"])
+        self.return_interpreter = return_interpreter
+        self.loop = loopfunction
     def execute(self,userdata): 
         rospy.loginfo("executing meafromfile, mode: %s"%userdata.current_mode_in)
         userdata.presenter.reset()
-        userdata.interpreter = return_interpreter(userdata.current_mode_in)
-        source= FileServer(loop,SerialInterface)
+        userdata.interpreter = self.return_interpreter(userdata.current_mode_in)
+        source= FileServer(self.loop,SerialInterface)
         #source = Client(loop,SerialInterface)
 
         rate = rospy.Rate(10)
@@ -129,46 +109,69 @@ class meafromfile(smach.State):
 
 
 class nonmea(smach.State):
-    def __init__(self):
+    def __init__(self, loopfunction, return_interpreter):
         smach.State.__init__(self,outcomes=["transition"],
                                 input_keys=["current_mode_in","interpreter_in","presenter"],
                                output_keys=["interpreter_out","presenter"])
         self.neuron_data = [0] * settings.NEURAL_ELECTRODES_TOTAL
+        self.return_interpreter = return_interpreter
+        self.loop = loopfunction
 
     def execute(self,userdata):
         rospy.loginfo("executing nonmea")
         #may be redundant with esp32
         userdata.presenter.reset()
         print("nonmea mode: %s"% userdata.current_mode_in) 
-        userdata.interpreter_out=return_interpreter(userdata.current_mode_in)
+        userdata.interpreter_out=self.return_interpreter(userdata.current_mode_in)
         #need delay for correct output 
         #may be redundant with esp32
         rate = rospy.Rate(10)
         rate.sleep()    
 
         if userdata.interpreter_in.isStatic:
-            loop(self.neuron_data) 
+            self.loop(self.neuron_data) 
             while not settings.CHANGE_REQUESTED and not rospy.is_shutdown():
                 pass
         else:
             while not settings.CHANGE_REQUESTED and not rospy.is_shutdown():
-                loop(self.neuron_data)
+                self.loop(self.neuron_data)
                 
         return "transition"
 
-def loop(data):
-    global sm
-    sm.userdata.sm_interpreter.render(data,sm.userdata.sm_led_colors)
-    sm.userdata.sm_presenter.refresh(sm.userdata.sm_led_colors)
     
 def domecontrol():
-    global sm
+    
+    sm = smach.StateMachine(outcomes=[])
     sm.userdata.sm_source = None  
     sm.userdata.sm_presenter=SerialInterface()
     sm.userdata.sm_interpreter = None
     sm.userdata.sm_led_colors = None
     sm.userdata.sm_current_mode = None
     sm.userdata.sm_next_mode = None
+
+    def loop(data):
+        sm.userdata.sm_interpreter.render(data,sm.userdata.sm_led_colors)
+        sm.userdata.sm_presenter.refresh(sm.userdata.sm_led_colors)
+
+    def return_interpreter(mode):
+        print("returning %s"% mode)
+        if "moving-average" in mode:
+            return MovingAverage()
+        elif "intensity" in mode:
+            return Intensity()
+        elif "individual-moving-average" in (mode):
+            return IndividualMovingAverage()
+        elif "random-mode" in mode:
+            return RandomMode()
+        elif "siren" in mode:
+            return Siren()
+        elif "eyes" in mode:
+            return Eyes()
+        elif "snake" in mode:
+            return Snake()
+        else:
+            #error handling?
+            pass
 
     def callback(data):
         if sm.userdata.sm_current_mode != data.data:
@@ -180,7 +183,7 @@ def domecontrol():
     rospy.Subscriber("dome_control", String, callback)
 
     with sm:
-        smach.StateMachine.add("Startup",startup(),
+        smach.StateMachine.add("Startup",startup(loop),
                transitions={"transition":"Transition"},
                  remapping={"presenter_out":"sm_presenter",
                             "interpreter_out":"sm_interpreter",
@@ -198,14 +201,14 @@ def domecontrol():
                              "led_colors":"sm_led_colors",
                              "interpreter_out":"sm_interpreter"})
 
-        smach.StateMachine.add("Nonmea",nonmea(),
+        smach.StateMachine.add("Nonmea",nonmea(loop,return_interpreter),
                 transitions={"transition":"Transition"},
                   remapping={"current_mode_in":"sm_current_mode",
                              "interpreter_in":"sm_interpreter",
                              "interpreter_out":"sm_interpreter",
                              "presenter":"sm_presenter"})
 
-        smach.StateMachine.add("MEAFromFile",meafromfile(),
+        smach.StateMachine.add("MEAFromFile",meafromfile(loop,return_interpreter),
                 transitions={"transition":"Transition"},
                   remapping={"current_mode_in":"sm_current_mode",
                              "current_mode_out":"sm_current_mode",

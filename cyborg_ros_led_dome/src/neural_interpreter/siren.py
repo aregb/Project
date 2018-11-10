@@ -7,7 +7,7 @@ import system.settings as settings
 class Siren():
     def __init__(self):
         self.previous_color = "blue"
-        self.rate = rospy.Rate(16)
+        self.rate = rospy.Rate(2)
         self.isStatic = False #looping needed
 
 

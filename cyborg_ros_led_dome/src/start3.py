@@ -33,7 +33,6 @@ class startup(smach.State):
 
     def execute(self,userdata):
         neuron_data = [0] * settings.NEURAL_ELECTRODES_TOTAL
-        settings.CHANGE_REQUESTED = False
         userdata.led_colors_out = bytearray([0] * (3 * settings.LEDS_TOTAL))
         userdata.presenter_out = SerialInterface()
         userdata.interpreter_out = Eyes()
@@ -64,23 +63,23 @@ class meafromserver(smach.State):
 
         
 class meafromfile(smach.State):
-    def __init__(self, loopfunction, return_interpreter):
+    def __init__(self, loopfunction, return_interpreter,update_visualization_mode):
         smach.State.__init__(self,outcomes=["nonmea","meafromfile"],
                                 input_keys=["current_interpreter_in","presenter","interpreter"],
                                output_keys=["interpreter","presenter"])
         self.return_interpreter = return_interpreter
         self.loop = loopfunction
+        self.update_visualization_mode = update_visualization_mode
     def execute(self,userdata): 
         rospy.loginfo("executing meafromfile, interpreter: %s"%userdata.current_interpreter_in)
         userdata.presenter.reset()
         userdata.interpreter = self.return_interpreter(userdata.current_interpreter_in)
         source= FileServer(self.loop,SerialInterface)
-        #source = Client(loop,SerialInterface)
 
         rate = rospy.Rate(10)
         rate.sleep()   
         source.loop()
-        return "transition"
+        return self.update_visualization_mode()
 
 
 
@@ -122,9 +121,8 @@ def domecontrol():
     sm.userdata.sm_source = None  # fjerne
     sm.userdata.sm_presenter=SerialInterface() #fjerne
     sm.userdata.sm_interpreter = None #fjerne
-    sm.userdata.sm_led_colors = None
-    sm.userdata.sm_current_mode = None
-    sm.userdata.sm_next_mode = None
+    sm.userdata.sm_led_colors = None #fjerne
+    sm.userdata.sm_mode = None
     sm.userdata.sm_current_interpreter = None
     sm.userdata.sm_next_interpreter = None
 
@@ -155,26 +153,24 @@ def domecontrol():
 
     def update_visualization_mode():
         rospy.loginfo("led_dome state change requested")
+        settings.CHANGE_REQUESTED = False
         print("%s interpreter requested"%sm.userdata.sm_next_interpreter)        
         sm.userdata.sm_current_interpreter = sm.userdata.sm_next_interpreter
         print("userdata.current_interpreter set to:%s"%sm.userdata.sm_current_interpreter)
         sm.userdata.sm_next_interpreter_out = None
-        sm.userdata.sm_next_mode = None
-        settings.CHANGE_REQUESTED = False
-        
+
         if sm.userdata.sm_current_interpreter in ("siren","eyes","random-mode","snake"):
             print("nonmea-current.interpreter after transition, before return:%s"%sm.userdata.sm_current_interpreter)
             print("nonmea-next.interpreter after transition, before return:%s"%sm.userdata.sm_next_interpreter)
-            sm.userdata.sm_current_mode = "nonmea"
-            print("returning %s"% sm.userdata.sm_current_mode)
-            return sm.userdata.sm_current_mode
-
+            sm.userdata.sm_mode = "nonmea"
+            print("returning %s"% sm.userdata.sm_mode)
+            return sm.userdata.sm_mode
         else:
             print("file-current.interpreter after transition, before return:%s"%sm.userdata.sm_current_interpreter)
             print("file-next.interpreter after transition, before return:%s"%sm.userdata.sm_next_interpreter)
-            print("returning %s"% sm.userdata.sm_current_mode)
-            sm.userdata.sm_current_mode = "meafromfile"
-            return sm.userdata.sm_current_mode
+            print("returning %s"% sm.userdata.sm_mode)
+            sm.userdata.sm_mode = "meafromfile"
+            return sm.userdata.sm_mode
         
     def callback(data):
         if sm.userdata.sm_current_interpreter != data.data:
@@ -185,6 +181,8 @@ def domecontrol():
 
     rospy.Subscriber("dome_control", String, callback)
 
+
+    #setup state machine
     with sm:
         smach.StateMachine.add("Startup",startup(loop,update_visualization_mode),
                transitions={"nonmea":"Nonmea",
@@ -201,17 +199,17 @@ def domecontrol():
                              "interpreter_out":"sm_interpreter",
                              "presenter":"sm_presenter"})
 
-        smach.StateMachine.add("MEAFromFile",meafromfile(loop,return_interpreter),
+        smach.StateMachine.add("MEAFromFile",meafromfile(loop,return_interpreter,update_visualization_mode),
                 transitions={"nonmea":"Nonmea",
                              "meafromfile":"MEAFromFile"},
                   remapping={"current_interpreter_in":"sm_current_interpreter",
-                             "current_interpreter_out":"sm_current_interpreter",
                              "presenter":"sm_presenter",
                              "interpreter":"sm_interpreter"})
 
         smach.StateMachine.add("MEAFromServer",meafromserver(),
                 transitions={"nonmea":"Nonmea"})
-
+                
+    #execute state machine
     outcome = sm.execute()
 
 if __name__=="__domecontrol__":

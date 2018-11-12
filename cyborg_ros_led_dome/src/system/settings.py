@@ -19,11 +19,7 @@ NEURAL_INTERPRETER = 'random' #fjerne?
 NEURAL_DATA_TYPE = 'frequency'
 
 # Visualization
-<<<<<<< HEAD
-LED_REFRESHES_PER_SECOND = 10
-=======
 LED_REFRESHES_PER_SECOND = 16
->>>>>>> 0becafcf638e3305c445a5f527c516d9a8ded909
 LED_MODEL_NAME = 'large_cube'
 LED_ELECTRODE_SHUFFLE = False
 

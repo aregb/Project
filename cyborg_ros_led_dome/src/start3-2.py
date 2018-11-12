@@ -37,10 +37,6 @@ class startup(smach.State):
         userdata.presenter_out = SerialInterface()
         userdata.interpreter_out = Eyes()
         userdata.current_interpreter_out = "eyes" 
-        #redundant?
-        """for i in range(len(neuron_data)):
-            neuron_data[i] = 0"""
-        self.loop(neuron_data)
         self.loop(neuron_data)
        
         #wait for incoming message
@@ -97,7 +93,6 @@ class nonmea(smach.State):
         rospy.loginfo("executing nonmea")
         #may be redundant with esp32
         userdata.presenter.reset()
-        print("nonmea mode: %s"% userdata.current_interpreter_in) 
         userdata.interpreter_out=self.return_interpreter(userdata.current_interpreter_in)
         #need delay for correct output 
         #may be redundant with esp32
@@ -132,7 +127,6 @@ def domecontrol():
         sm.userdata.sm_presenter.refresh(sm.userdata.sm_led_colors)
 
     def return_interpreter(interpreter):
-        print("returning %s"% interpreter)
         if "moving-average" in interpreter:
             return MovingAverage()
         elif "intensity" in interpreter:
@@ -153,36 +147,26 @@ def domecontrol():
 
     def update_visualization_mode():
         rospy.loginfo("led_dome state change requested")
-        settings.CHANGE_REQUESTED = False
-        print("%s interpreter requested"%sm.userdata.sm_next_interpreter)        
+        settings.CHANGE_REQUESTED = False       
         sm.userdata.sm_current_interpreter = sm.userdata.sm_next_interpreter
-        print("userdata.current_interpreter set to:%s"%sm.userdata.sm_current_interpreter)
         sm.userdata.sm_next_interpreter_out = None
 
         if sm.userdata.sm_current_interpreter in ("siren","eyes","random-mode","snake"):
-            print("nonmea-current.interpreter after transition, before return:%s"%sm.userdata.sm_current_interpreter)
-            print("nonmea-next.interpreter after transition, before return:%s"%sm.userdata.sm_next_interpreter)
             sm.userdata.sm_mode = "nonmea"
-            print("returning %s"% sm.userdata.sm_mode)
             return sm.userdata.sm_mode
         else:
-            print("file-current.interpreter after transition, before return:%s"%sm.userdata.sm_current_interpreter)
-            print("file-next.interpreter after transition, before return:%s"%sm.userdata.sm_next_interpreter)
-            print("returning %s"% sm.userdata.sm_mode)
             sm.userdata.sm_mode = "meafromfile"
             return sm.userdata.sm_mode
         
     def callback(data):
         if sm.userdata.sm_current_interpreter != data.data:
             settings.CHANGE_REQUESTED = True
-            print("previous interpreter: %s"%sm.userdata.sm_current_interpreter)
             sm.userdata.sm_next_interpreter = data.data
-            print("requested interpreter: %s"%sm.userdata.sm_next_interpreter)
 
     rospy.Subscriber("dome_control", String, callback)
 
 
-    #setup state machine
+    #initiate state machine
     with sm:
         smach.StateMachine.add("Startup",startup(loop,update_visualization_mode),
                transitions={"nonmea":"Nonmea",

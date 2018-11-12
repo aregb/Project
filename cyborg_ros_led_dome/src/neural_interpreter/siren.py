@@ -13,9 +13,7 @@ class Siren():
 
     def render(self, input_data, output_data):
         print("rendering siren")
-        if settings.CHANGE_REQUESTED:
-            pass
-        else:
+        if not settings.CHANGE_REQUESTED:
             if self.previous_color == "blue":
                 for i in range(settings.LEDS_TOTAL):
                     output_data[i*3 ] = 10

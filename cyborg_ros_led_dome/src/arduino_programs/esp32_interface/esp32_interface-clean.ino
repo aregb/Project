@@ -53,24 +53,25 @@ void receiveSerialData() {
   }
 }
 
+
 // SETTING LEDS FROM RECEIVED DATA
 void setLedsFromBuffer() {
-  int colorCount = 0;
-  int ledCount = 0;
-  if(gotData == true){  
-  for (int i = 0; i < NUM_LEDS * 3; i++) {
-    switch (colorCount) {
-      case 0:
-        leds[ledCount].r = buffer[i];
-        break;
-      case 1:
-        leds[ledCount].g = buffer[i];
-        break;
-      case 2:
-        leds[ledCount].b = buffer[i];
-        break;
-    }
-    colorCount++;
+    if(gotData == true){  
+        int colorCount = 0;
+        int ledCount = 0;
+        for (int i = 0; i < NUM_LEDS * 3; i++) {
+            switch (colorCount) {
+            case 0:
+                leds[ledCount].r = buffer[i];
+                break;
+            case 1:
+                leds[ledCount].g = buffer[i];
+                break;
+            case 2:
+                leds[ledCount].b = buffer[i];
+                break;
+            }
+        colorCount++;
     if (colorCount == 3) {
       colorCount = 0;
       ledCount++;
@@ -79,4 +80,16 @@ void setLedsFromBuffer() {
   FastLED.show();
   gotData = false;
   }
+}
+
+void setLedsFromBuffer2(){
+ if(gotData == true){
+    for (int i=0; i<NUM_LEDS*3; i+=3){
+        leds[i/3].r = buffer[i];
+        leds[i/3].g = buffer[i+1];
+        leds[i/3].b = buffer[i+2];
+    }
+    FastLED.show();
+    gotData = false;
+ }
 }

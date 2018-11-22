@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Serial
-SERIAL_BAUD_RATE =1000000 #115200
+SERIAL_BAUD_RATE =1000000
 
 # 2D plot
 PLOT_COLOR_FROM = 'blue'
@@ -13,13 +13,13 @@ SERVER_TIMEOUT = 5
 
 # Data flow
 NEURAL_ELECTRODES_TOTAL = 60
-NEURAL_PRESENTER = 'serial' #fjerne?
-NEURAL_SOURCE = 'none' #none, file, eller server
-NEURAL_INTERPRETER = 'random' #fjerne?
+NEURAL_PRESENTER = 'serial'
+NEURAL_SOURCE = 'none'
+NEURAL_INTERPRETER = 'random'
 NEURAL_DATA_TYPE = 'frequency'
 
 # Visualization
-LED_REFRESHES_PER_SECOND = 16
+LED_REFRESHES_PER_SECOND = 10
 LED_MODEL_NAME = 'large_cube'
 LED_ELECTRODE_SHUFFLE = False
 
@@ -27,9 +27,9 @@ LED_ELECTRODE_SHUFFLE = False
 THRESHOLD = -1*10**7
 
 ### Derived variables (initialized in environment.py) ###
-LEDS_TOTAL = 790#790
+LEDS_TOTAL = 791
 LED_MODEL = None
-NEURAL_DATA_FILE = "/home/aregb/catkin_ws/src/cyborg_ros_led_dome/src/neural_sources/file/data/2017-10-20_MEA2_100000rows_10sec.csv"#"neural_sources/file/data/2017-10-20_MEA2_100000rows_10sec.csv"
+NEURAL_DATA_FILE = "/home/aregb/catkin_ws/src/cyborg_ros_led_dome/src/neural_sources/file/data/2017-10-20_MEA2_100000rows_10sec.csv"
 
 # Mode change
 CHANGE_REQUESTED = False

@@ -7,7 +7,7 @@ from system.settings import SERIAL_BAUD_RATE, LEDS_TOTAL
 import system.settings as settings
 
 
-
+#function for conversion of array to sparse addressed array, currently not in use
 def array2sparseadressedarray(led_color_array):
     indexedarray = bytearray()
     totelements = 0
@@ -30,21 +30,10 @@ def array2sparseadressedarray(led_color_array):
 
 class SerialInterface:
     def __init__(self):
-        port = "/dev/ttyUSB0" # ACM0 -hardcoded to get right port
-    	#port = self._find_arduino_port()
-        if port is None:
-            sys.exit("Couldn't find arduino port")
+        port = "/dev/ttyUSB0" # ACM0 for Arduino
         # Initialize serial communication, 8 data bits, no parity 1 stop bit
         self.ser = serial.Serial(port, SERIAL_BAUD_RATE, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
         time.sleep(2)
-
-    def _find_arduino_port(self):
-        ports = list(serial.tools.list_ports.comports())
-        for port in ports:
-            if "arduino" in str(port).lower():
-                return str(port).split(" -")[0]
-            else:
-                return None
 
     # Included for completeness, not actually used in our program
     def read(self, num_bytes):
@@ -57,12 +46,6 @@ class SerialInterface:
         self.ser.write(bytearray([0] * (3*LEDS_TOTAL)))
 
 
-    def reset(self):
-        print("resetting arduino")
-        self.ser.write("a")
-        
-
-
     def refresh(self, led_color_array):
         #check for values used as start/end marker
         for index in range(len(led_color_array)):
@@ -70,7 +53,7 @@ class SerialInterface:
 
         #new array with start/end marker
         array = bytearray([0])
-        array[0] = 254
+        array[0] = 254 
         array +=led_color_array
         array.append(255)
 

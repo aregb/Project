@@ -7,23 +7,26 @@ import system.settings as settings
 class Siren():
     def __init__(self):
         self.previous_color = "blue"
-        self.rate = rospy.Rate(2)
-        self.isStatic = False #looping needed
-
+        #refresh rate
+        self.rate = rospy.Rate(3)
+        self.isStatic = False
 
     def render(self, input_data, output_data):
-        print("rendering siren")
         if not settings.CHANGE_REQUESTED:
             if self.previous_color == "blue":
-                for i in range(settings.LEDS_TOTAL):
-                    output_data[i*3 ] = 10
-                    output_data[i*3 + 1] = 0
+                for i in range((settings.LEDS_TOTAL/2)-1):
+                    output_data[i*3 ] = 20
                     output_data[i*3+ 2] = 0
+                for i in range(settings.LEDS_TOTAL/2,settings.LEDS_TOTAL):
+                    output_data[i*3 ] = 0
+                    output_data[i*3 + 2] = 20
                 self.previous_color = "red"
             else:
-                for i in range(settings.LEDS_TOTAL):
+                for i in range((settings.LEDS_TOTAL/2)-1):
                     output_data[i*3 ] = 0
-                    output_data[i*3 + 1] = 0
-                    output_data[i*3 + 2] = 10
+                    output_data[i*3+ 2] = 20
+                for i in range(settings.LEDS_TOTAL/2,settings.LEDS_TOTAL):
+                    output_data[i*3 ] = 20
+                    output_data[i*3 + 2] = 0
                 self.previous_color = "blue"
             self.rate.sleep()

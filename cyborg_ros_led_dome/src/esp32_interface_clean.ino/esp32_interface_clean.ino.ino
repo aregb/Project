@@ -1,12 +1,12 @@
 #include "FastLED.h"
-#define NUM_LEDS 790
-#define DATA_PIN 33
-#define BAUDRATE 1000000
+const uint16_t  NUM_LEDS = 791;
+const uint8_t DATA_PIN = 33;
+const int BAUDRATE = 1000000;
 
 
 // BUFFER AND VARIABLES FOR RECEIVING A BYTEARRAY
-uint8_t buffer[NUM_LEDS * 3]; // Each led has 3 bytes of data (One for each color value)
-boolean gotData = false;   // Got all data we needed to set leds
+uint8_t buffer[NUM_LEDS * 3]; // Each led has 3 bytes of data (one for each color value)
+boolean gotData = false;   
 
 // INITIALIZE LEDS
 CRGB leds[NUM_LEDS];
@@ -28,10 +28,10 @@ void loop() {
 
 void receiveSerialData() {
   static boolean recvInProgress = false;
-  static int index =0;
-  uint8_t startMarker = 254;
-  uint8_t endMarker = 255;
-  uint8_t rb;
+  static uint16_t index =0;
+  static uint8_t startMarker = 254;
+  static uint8_t endMarker = 255;
+  static uint8_t rb;
   
   while (Serial.available() > 0 && gotData==false) {
     rb = Serial.read();
@@ -55,34 +55,7 @@ void receiveSerialData() {
 
 
 // SETTING LEDS FROM RECEIVED DATA
-void setLedsFromBuffer() {
-    if(gotData == true){  
-        int colorCount = 0;
-        int ledCount = 0;
-        for (int i = 0; i < NUM_LEDS * 3; i++) {
-            switch (colorCount) {
-            case 0:
-                leds[ledCount].r = buffer[i];
-                break;
-            case 1:
-                leds[ledCount].g = buffer[i];
-                break;
-            case 2:
-                leds[ledCount].b = buffer[i];
-                break;
-            }
-        colorCount++;
-    if (colorCount == 3) {
-      colorCount = 0;
-      ledCount++;
-    }
-  }
-  FastLED.show();
-  gotData = false;
-  }
-}
-
-void setLedsFromBuffer2(){
+void setLedsFromBuffer(){
  if(gotData == true){
     for (int i=0; i<NUM_LEDS*3; i+=3){
         leds[i/3].r = buffer[i];

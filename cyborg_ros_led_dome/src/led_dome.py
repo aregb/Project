@@ -5,17 +5,15 @@ __author__      = "Areg Babayan"
 __copyright__   = "Copyright (C) 2018 Areg Babayan"
 __license__     = "BSD"
 __version__     = "0.0.3"
-__all__         = []   # why this?
+__all__         = []  
 
 import rospy
-import start3
+import domecontrol
 
 
 def main():
     rospy.init_node("cyborg_led_dome")
-    start3.domecontrol()
-
-
+    domecontrol.domecontrol()
 
 
 if __name__ == '__main__':

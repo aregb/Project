@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#import statistics
 import numpy as np
 import neural_interpreter.support_functions.data_to_color as d2c
 from collections import deque
@@ -14,8 +13,6 @@ class MovingAverage:
         self.intensities = [0] * settings.NEURAL_ELECTRODES_TOTAL
 
     def render(self, input_data, output_data):
-        #current_variation = statistics.stdev(input_data)
-        #current_average = statistics.mean(input_data)
         current_variation = np.std(input_data)
         current_average = np.mean(input_data)
         self.past_variances.popleft()
@@ -23,8 +20,6 @@ class MovingAverage:
         self.past_averages.popleft()
         self.past_averages.append(current_average)
 
-        #variation = statistics.mean(self.past_variances)
-        #average = statistics.mean(self.past_averages)
         variation = np.mean(self.past_variances)
         average = np.mean(self.past_averages)
 
